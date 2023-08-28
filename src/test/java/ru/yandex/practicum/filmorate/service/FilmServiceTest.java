@@ -3,6 +3,8 @@ package ru.yandex.practicum.filmorate.service;
 import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.InMemoryFilmStorage;
+import ru.yandex.practicum.filmorate.storage.InMemoryUserStorage;
 
 import java.time.LocalDate;
 
@@ -15,8 +17,10 @@ public class FilmServiceTest {
     void validateFilmTest_shouldThrowValidationException() {
         final ValidationException exception = assertThrows(
                 ValidationException.class,
-                () -> new FilmService().addFilm(new Film(0, "Film", "film",
-                        LocalDate.of(1895, 12, 27),60))
+                () -> new FilmService(new InMemoryFilmStorage(), new InMemoryUserStorage())
+                        .addFilm(new Film(0, "Film", "film",
+                                LocalDate.of(1895, 12, 27),60)
+                        )
         );
 
         assertEquals("Дата релиза — не раньше 28 декабря 1895 года.", exception.getMessage(),
@@ -25,9 +29,12 @@ public class FilmServiceTest {
 
     @Test
     void validateFilmTest_shouldReturnReleaseDate() {
-        Film film = new FilmService().addFilm(new Film(0, "Film", "film",
-                LocalDate.of(1895, 12, 28),60));
+        Film film = new FilmService(new InMemoryFilmStorage(), new InMemoryUserStorage())
+                .addFilm(new Film(0, "Film", "film",
+                        LocalDate.of(1895, 12, 28),60)
+                );
 
-        assertEquals(LocalDate.of(1895, 12, 28), film.getReleaseDate(), "Неверная дата релиза.");
+        assertEquals(LocalDate.of(1895, 12, 28), film.getReleaseDate(),
+                "Неверная дата релиза.");
     }
 }
