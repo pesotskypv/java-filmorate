@@ -45,9 +45,9 @@ public class FilmService {
 
     private boolean validateFilm(Film film) {
         if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
-            String textError = "Валидация не пройдена: дата релиза — не раньше 28 декабря 1895 года.";
+            String textError = "Дата релиза — не раньше 28 декабря 1895 года.";
 
-            log.debug(textError);
+            log.debug("Валидация не пройдена: " + textError);
             throw new ValidationException(textError);
         }
 
