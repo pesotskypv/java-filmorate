@@ -28,7 +28,7 @@ public class UserController {
     }
 
     @GetMapping
-    public Collection<User> findAllUsers() {
+    public List<User> findAllUsers() {
         return userService.findAllUsers();
     }
 

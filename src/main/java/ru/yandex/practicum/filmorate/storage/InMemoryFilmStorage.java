@@ -1,14 +1,16 @@
 package ru.yandex.practicum.filmorate.storage;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.FilmNotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.util.*;
 
-@Slf4j
 @Repository
+@Qualifier("InMemoryFilmStorage")
+@Slf4j
 public class InMemoryFilmStorage implements FilmStorage {
 
     private final Map<Integer, Film> films = new HashMap<>();
@@ -22,18 +24,16 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
-    public Film updateFilm(Film film) {
+    public void updateFilm(Film film) {
         int id = film.getId();
 
         filmCheckInStorage(id);
         films.put(film.getId(), film);
         log.debug("Обновлён фильм: {}", film);
-
-        return film;
     }
 
     @Override
-    public Collection<Film> findAllFilms() {
+    public List<Film> findAllFilms() {
         return List.copyOf(films.values());
     }
 

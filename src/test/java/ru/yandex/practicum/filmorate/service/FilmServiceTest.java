@@ -17,9 +17,9 @@ public class FilmServiceTest {
     void validateFilmTest_shouldThrowValidationException() {
         final ValidationException exception = assertThrows(
                 ValidationException.class,
-                () -> new FilmService(new InMemoryFilmStorage(), new InMemoryUserStorage())
+                () -> new FilmService(new InMemoryFilmStorage(), new InMemoryUserStorage(), null, null, null)
                         .addFilm(new Film(0, "Film", "film",
-                                LocalDate.of(1895, 12, 27),60)
+                                LocalDate.of(1895, 12, 27),60, null)
                         )
         );
 
@@ -29,9 +29,9 @@ public class FilmServiceTest {
 
     @Test
     void validateFilmTest_shouldReturnReleaseDate() {
-        Film film = new FilmService(new InMemoryFilmStorage(), new InMemoryUserStorage())
+        Film film = new FilmService(new InMemoryFilmStorage(), new InMemoryUserStorage(), null, null, null)
                 .addFilm(new Film(0, "Film", "film",
-                        LocalDate.of(1895, 12, 28),60)
+                        LocalDate.of(1895, 12, 28),60, null)
                 );
 
         assertEquals(LocalDate.of(1895, 12, 28), film.getReleaseDate(),

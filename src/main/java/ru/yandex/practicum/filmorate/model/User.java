@@ -1,9 +1,6 @@
 package ru.yandex.practicum.filmorate.model;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
+import lombok.*;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
@@ -12,15 +9,11 @@ import java.util.List;
 import java.util.Set;
 
 @Data
+@Builder
 @AllArgsConstructor
 public class User {
 
     private int id;
-
-    @NotNull
-    @NotBlank
-    @Email
-    private String email;
 
     @NotNull
     @NotBlank
@@ -32,6 +25,11 @@ public class User {
     @Past
     private LocalDate birthday;
 
+    @NotNull
+    @NotBlank
+    @Email
+    private String email;
+
     @Getter(AccessLevel.NONE)
     private final Set<Long> friends = new HashSet<>();
 
@@ -39,11 +37,7 @@ public class User {
         return List.copyOf(friends);
     }
 
-    public void addFriendId(int id) {
-        friends.add((long) id);
-    }
-
-    public void removeFriendId(int id) {
-        friends.remove((long) id);
+    public void addFriendIds(List<Long> list) {
+        friends.addAll(list);
     }
 }
