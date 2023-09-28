@@ -132,7 +132,7 @@ public class FilmService {
 
     public Mpa getMpa(int id) {
         return mpaDao.getMpa(id);
-    };
+    }
 
     private void validateFilm(Film film) {
         if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
