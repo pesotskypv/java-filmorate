@@ -2,11 +2,13 @@ package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.model.Friend;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.FriendDao;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -27,61 +29,79 @@ public class UserService {
     public User updateUser(User user) {
         int id = user.getId();
 
-        validateUser(user);
         userStorage.getUser(id); // Проверка существования пользователя
+        validateUser(user);
         userStorage.updateUser(user);
 
         return getUser(id);
     }
 
     public List<User> findAllUsers() {
-        List<User> users = userStorage.findAllUsers();
-        for (User user : users) {
-            user.addFriendIds(friendDao.findUserFriendsIds(user.getId()));
-        }
-        return users;
+        return friendingUsers(userStorage.findAllUsers());
     }
 
     public User getUser(int id) {
-        User user = userStorage.getUser(id);
-        user.addFriendIds(friendDao.findUserFriendsIds(user.getId()));
-        return user;
+        return friendingUsers(List.of(userStorage.getUser(id))).get(0);
     }
 
     public User addUserFriend(int id, int friendId) {
         userStorage.getUser(id); // Проверка существования пользователя
         userStorage.getUser(friendId); // Проверка существования друга
         friendDao.addUserFriendId(id, friendId);
+
         return getUser(id);
     }
 
     public User removeUserFriend(int id, int friendId) {
         userStorage.getUser(id); // Проверка существования пользователя
-
         friendDao.removeUserFriendId(id, friendId);
 
         return getUser(id);
     }
 
     public List<User> findUserFriends(int id) {
-        List<User> friends = friendDao.findUserFriends(id);
-        for (User user : friends) {
-            user.addFriendIds(friendDao.findUserFriendsIds(user.getId()));
-        }
-        return friends;
+        return friendingUsers(friendDao.findUserFriends(id));
     }
 
     public List<User> findUserMutualFriends(int id, int otherId) {
-        List<User> mutualFriends = friendDao.findUserMutualFriends(id, otherId);
-        for (User user : mutualFriends) {
-            user.addFriendIds(friendDao.findUserFriendsIds(user.getId()));
-        }
-        return mutualFriends;
+        return friendingUsers(friendDao.findUserMutualFriends(id, otherId));
     }
 
     private void validateUser(User user) {
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
+    }
+
+    private List<User> friendingUsers(List<User> users) {
+        Map<Integer, List<Long>> userFriends = new HashMap<>();
+
+        if (users.isEmpty()) {
+            return users;
+        }
+
+        List<Integer> userIds = users.stream().map(User::getId).collect(Collectors.toList());
+
+        for (Friend friend : friendDao.findFriends(userIds)) {
+            List<Long> friendsIds;
+            int userId = friend.getUserId();
+
+            if (userFriends.containsKey(userId)) {
+                friendsIds = userFriends.get(userId);
+            } else {
+                friendsIds = new ArrayList<>();
+            }
+            friendsIds.add((long) friend.getFriendId());
+            userFriends.put(userId, friendsIds);
+        }
+        for (User user : users) {
+            int userId = user.getId();
+
+            if (userFriends.containsKey(userId)) {
+                user.addFriendIds(userFriends.get(userId));
+            }
+        }
+
+        return users;
     }
 }

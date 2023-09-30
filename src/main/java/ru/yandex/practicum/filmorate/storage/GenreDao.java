@@ -9,8 +9,10 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.server.ResponseStatusException;
+import ru.yandex.practicum.filmorate.model.FilmGenre;
 import ru.yandex.practicum.filmorate.model.Genre;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -22,7 +24,14 @@ public class GenreDao {
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final Mappers mappers;
 
-    public List<Genre> findGenres() {
+    public List<FilmGenre> findGenres(List<Integer> ids) {
+        String query = "SELECT * FROM genres_films WHERE film_id IN (:id)";
+        SqlParameterSource namedParams = new MapSqlParameterSource("id", ids);
+
+        return jdbcTemplate.query(query, namedParams, mappers.filmGenresMapper);
+    }
+
+    public List<Genre> findAllGenres() {
         String query = "SELECT * FROM genres";
 
         return jdbcTemplate.query(query, mappers.genreMapper);
@@ -49,13 +58,20 @@ public class GenreDao {
         log.debug(String.format("Удалена записи в genres_films для film_id %d", id));
     }
 
-    public void addFilmGenre(int filmId, int genreId) {
+    public void addFilmGenre(List<FilmGenre> filmGenres) {
         String query =
                 "INSERT INTO genres_films (film_id, genre_id) VALUES (:film_id, :genre_id) ON CONFLICT DO NOTHING";
-        Map<String, Object> namedParams = Map.of("film_id", filmId, "genre_id", genreId);
+        List<MapSqlParameterSource> namedParams = new ArrayList<>();
 
-        jdbcTemplate.update(query, new MapSqlParameterSource(namedParams));
-        log.debug(String.format("Добавлена запись в genres_films для film_id %d, genre_id %d", filmId, genreId));
+        for (FilmGenre filmGenre : filmGenres) {
+            MapSqlParameterSource source = new MapSqlParameterSource();
+            source.addValue("film_id", filmGenre.getFilmId());
+            source.addValue("genre_id", filmGenre.getGenreId());
+            namedParams.add(source);
+        }
+
+        jdbcTemplate.batchUpdate(query, namedParams.toArray(MapSqlParameterSource[]::new));
+        log.debug("Добавлены записи в genres_films для {}", filmGenres);
     }
 
     public List<Genre> findFilmGenres(int id) {

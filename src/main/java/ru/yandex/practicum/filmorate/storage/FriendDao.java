@@ -6,10 +6,10 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.filmorate.model.Friend;
 import ru.yandex.practicum.filmorate.model.User;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Repository
 @Slf4j
@@ -19,11 +19,11 @@ public class FriendDao {
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final Mappers mappers;
 
-    public List<Long> findUserFriendsIds(int id) {
-        String query = "SELECT friend_id FROM friends_users WHERE user_id = :id";
-        SqlParameterSource namedParams = new MapSqlParameterSource("id", id);
+    public List<Friend> findFriends(List<Integer> ids) {
+        String query = "SELECT * FROM friends_users WHERE user_id IN (:id)";
+        SqlParameterSource namedParams = new MapSqlParameterSource("id", ids);
 
-        return jdbcTemplate.queryForList(query, namedParams, Long.class);
+        return jdbcTemplate.query(query, namedParams, mappers.friendMapper);
     }
 
     public void addUserFriendId(int id, int friendId) {

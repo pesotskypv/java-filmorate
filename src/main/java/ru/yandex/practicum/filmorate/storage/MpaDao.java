@@ -4,9 +4,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.server.ResponseStatusException;
+import ru.yandex.practicum.filmorate.model.FilmMpa;
 import ru.yandex.practicum.filmorate.model.Mpa;
 
 import java.util.List;
@@ -20,10 +23,17 @@ public class MpaDao {
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final Mappers mappers;
 
-    public List<Mpa> findMpa() {
+    public List<Mpa> findAllMpa() {
         String query = "SELECT * FROM mpa";
 
         return jdbcTemplate.query(query, mappers.mpaMapper);
+    }
+
+    public List<FilmMpa> findMpa(List<Integer> ids) {
+        String query = "SELECT film_id, mpa_id FROM films WHERE film_id IN (:id)";
+        SqlParameterSource namedParams = new MapSqlParameterSource("id", ids);
+
+        return jdbcTemplate.query(query, namedParams, mappers.filmMpaMapper);
     }
 
     public Mpa getMpa(int id) {

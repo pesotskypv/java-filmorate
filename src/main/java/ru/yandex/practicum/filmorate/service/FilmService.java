@@ -4,13 +4,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.Genre;
-import ru.yandex.practicum.filmorate.model.Mpa;
+import ru.yandex.practicum.filmorate.model.*;
 import ru.yandex.practicum.filmorate.storage.*;
 
 import java.time.LocalDate;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -33,22 +33,10 @@ public class FilmService {
 
     public Film addFilm(Film film) {
         validateFilm(film);
-        List<Genre> genres = film.getGenres();
+        filmStorage.addFilm(film);
+        addFilmGenres(film);
 
-        for (Genre genre : genres) { // Проверка существования жанра
-            genreDao.getGenre(genre.getId());
-        }
-
-        Film filmUpd = filmStorage.addFilm(film);
-        int id = filmUpd.getId();
-
-        for (Genre genre : genres) {
-            genreDao.addFilmGenre(id, genre.getId());
-        }
-
-        Film filmNew = getFilm(id);
-        log.debug("Добавлен фильм: {}", filmNew);
-        return filmNew;
+        return getFilm(film.getId());
     }
 
     public Film updateFilm(Film film) {
@@ -56,32 +44,15 @@ public class FilmService {
 
         validateFilm(film);
         filmStorage.getFilm(id); // Проверка существования фильма
-        List<Genre> genres = film.getGenres();
-
-        for (Genre genre : genres) { // Проверка существования жанра
-            genreDao.getGenre(genre.getId());
-        }
         filmStorage.updateFilm(film);
         genreDao.removeAllFilmGenre(id);
-        for (Genre genre : genres) {
-            genreDao.addFilmGenre(id, genre.getId());
-        }
+        addFilmGenres(film);
 
-        Film filmUpd = getFilm(id);
-        log.debug("Обновлён фильм: {}", filmUpd);
-
-        return filmUpd;
+        return getFilm(id);
     }
 
     public List<Film> findAllFilms() {
-        List<Film> films = filmStorage.findAllFilms();
-        for (Film film : films) {
-            int id = film.getId();
-            film.addGenres(genreDao.findFilmGenres(id));
-            film.setMpa(mpaDao.getMpaByFilmId(id));
-        }
-
-        return films;
+        return collectFilmGenresMpa(filmStorage.findAllFilms());
     }
 
     public Film getFilm(int id) {
@@ -119,7 +90,7 @@ public class FilmService {
     }
 
     public List<Genre> findGenres() {
-        return genreDao.findGenres();
+        return genreDao.findAllGenres();
     }
 
     public Genre getGenre(int id) {
@@ -127,11 +98,23 @@ public class FilmService {
     }
 
     public List<Mpa> findMpa() {
-        return mpaDao.findMpa();
+        return mpaDao.findAllMpa();
     }
 
     public Mpa getMpa(int id) {
         return mpaDao.getMpa(id);
+    }
+
+    private void addFilmGenres(Film film) {
+        List<Genre> genres = film.getGenres();
+        List<FilmGenre> filmGenres = new ArrayList<>();
+
+        if (genres != null) {
+            for (Genre genre : genres) {
+                filmGenres.add(FilmGenre.builder().filmId(film.getId()).genreId(genre.getId()).build());
+            }
+            genreDao.addFilmGenre(filmGenres);
+        }
     }
 
     private void validateFilm(Film film) {
@@ -141,5 +124,46 @@ public class FilmService {
             log.debug("Валидация не пройдена: " + textError);
             throw new ValidationException(textError);
         }
+    }
+
+    private List<Film> collectFilmGenresMpa(List<Film> films) {
+        Map<Integer, List<Genre>> filmGenres = new HashMap<>();
+        Map<Integer, Mpa> filmMpa = new HashMap<>();
+
+        if (films.isEmpty()) {
+            return films;
+        }
+
+        Map<Integer, Genre> genresAll = genreDao.findAllGenres().stream().collect(Collectors
+                .toMap(Genre::getId, Function.identity()));
+        Map<Integer, Mpa> mpaAll = mpaDao.findAllMpa().stream().collect(Collectors
+                .toMap(Mpa::getId, Function.identity()));
+        List<Integer> filmIds = films.stream().map(Film::getId).collect(Collectors.toList());
+
+        for (FilmGenre filmGenre : genreDao.findGenres(filmIds)) {
+            int filmId = filmGenre.getFilmId();
+            List<Genre> genres;
+
+            if (filmGenres.containsKey(filmId)) {
+                genres = filmGenres.get(filmId);
+            } else {
+                genres = new ArrayList<>();
+            }
+            genres.add(genresAll.get(filmGenre.getGenreId()));
+            filmGenres.put(filmId, genres);
+        }
+        for (FilmMpa mpa : mpaDao.findMpa(filmIds)) {
+            filmMpa.put(mpa.getFilmId(), mpaAll.get(mpa.getMpaId()));
+        }
+        for (Film film : films) {
+            int filmId = film.getId();
+
+            if (filmGenres.containsKey(filmId)) {
+                film.addGenres(filmGenres.get(filmId));
+            }
+            film.setMpa(filmMpa.get(filmId));
+        }
+
+        return films;
     }
 }
