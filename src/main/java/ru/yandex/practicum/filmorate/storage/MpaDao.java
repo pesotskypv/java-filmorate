@@ -51,7 +51,9 @@ public class MpaDao {
 
     public Mpa getMpaByFilmId(int id) {
         String textError = String.format("Отсутствует ИД рейтинга в фильме id %d", id);
-        String query = "SELECT * FROM mpa WHERE mpa_id IN (SELECT mpa_id FROM films WHERE film_id = :id)";
+        String query = "SELECT m.* FROM films f " +
+                "JOIN mpa m ON f.mpa_id = m.mpa_id " +
+                "WHERE f.film_id = :id";
         Map<String, Object> namedParams = Map.of("id", id);
 
         try {

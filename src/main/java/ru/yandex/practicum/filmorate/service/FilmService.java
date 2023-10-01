@@ -57,6 +57,7 @@ public class FilmService {
 
     public Film getFilm(int id) {
         Film film = filmStorage.getFilm(id);
+
         film.addGenres(genreDao.findFilmGenres(id));
         film.setMpa(mpaDao.getMpaByFilmId(id));
         film.addLikeUserId(likeDao.findLikeUserIds(id));
@@ -82,6 +83,7 @@ public class FilmService {
 
     public List<Film> findFilmsByLikes(int count) {
         List<Film> popularFilms = likeDao.findFilmsByLikes(count);
+
         if (popularFilms.isEmpty()) {
             popularFilms = findAllFilms();
         }

@@ -75,8 +75,10 @@ public class GenreDao {
     }
 
     public List<Genre> findFilmGenres(int id) {
-        String query =
-                "SELECT * FROM genres WHERE genre_id IN (SELECT genre_id FROM genres_films WHERE film_id = :id)";
+        String query = "SELECT g.* FROM genres_films gf " +
+                "JOIN genres g ON gf.genre_id = g.genre_id " +
+                "WHERE gf.film_id = :id " +
+                "ORDER BY g.genre_id";
         SqlParameterSource namedParams = new MapSqlParameterSource("id", id);
 
         return jdbcTemplate.query(query, namedParams, mappers.genreMapper);
