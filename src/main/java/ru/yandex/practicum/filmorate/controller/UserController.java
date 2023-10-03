@@ -7,7 +7,6 @@ import ru.yandex.practicum.filmorate.service.UserService;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Positive;
-import java.util.Collection;
 import java.util.List;
 
 @RestController
@@ -28,7 +27,7 @@ public class UserController {
     }
 
     @GetMapping
-    public Collection<User> findAllUsers() {
+    public List<User> findAllUsers() {
         return userService.findAllUsers();
     }
 

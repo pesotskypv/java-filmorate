@@ -1,36 +1,70 @@
 package ru.yandex.practicum.filmorate.service;
 
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.model.Friend;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.FriendDao;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class UserService {
+    public UserService(@Qualifier("UserDbStorage") UserStorage userStorage, FriendDao friendDao) {
+        this.userStorage = userStorage;
+        this.friendDao = friendDao;
+    }
 
     private final UserStorage userStorage;
-    private int newId = 0;
+    private final FriendDao friendDao;
 
     public User createUser(User user) {
         validateUser(user);
-        user.setId(++newId);
 
         return userStorage.createUser(user);
     }
 
     public User updateUser(User user) {
-        validateUser(user);
+        int id = user.getId();
 
-        return userStorage.updateUser(user);
+        userStorage.getUser(id); // Проверка существования пользователя
+        validateUser(user);
+        userStorage.updateUser(user);
+
+        return getUser(id);
     }
 
-    public Collection<User> findAllUsers() {
-        return userStorage.findAllUsers();
+    public List<User> findAllUsers() {
+        return friendingUsers(userStorage.findAllUsers());
+    }
+
+    public User getUser(int id) {
+        return friendingUsers(List.of(userStorage.getUser(id))).get(0);
+    }
+
+    public User addUserFriend(int id, int friendId) {
+        userStorage.getUser(id); // Проверка существования пользователя
+        userStorage.getUser(friendId); // Проверка существования друга
+        friendDao.addUserFriendId(id, friendId);
+
+        return getUser(id);
+    }
+
+    public User removeUserFriend(int id, int friendId) {
+        userStorage.getUser(id); // Проверка существования пользователя
+        friendDao.removeUserFriendId(id, friendId);
+
+        return getUser(id);
+    }
+
+    public List<User> findUserFriends(int id) {
+        return friendingUsers(friendDao.findUserFriends(id));
+    }
+
+    public List<User> findUserMutualFriends(int id, int otherId) {
+        return friendingUsers(friendDao.findUserMutualFriends(id, otherId));
     }
 
     private void validateUser(User user) {
@@ -39,43 +73,35 @@ public class UserService {
         }
     }
 
-    public User getUser(int id) {
-        return userStorage.getUser(id);
-    }
+    private List<User> friendingUsers(List<User> users) {
+        Map<Integer, List<Long>> userFriends = new HashMap<>();
 
-    public User addUserFriend(int id, int friendId) {
-        User user = userStorage.getUser(id);
-        User friend = userStorage.getUser(friendId);
+        if (users.isEmpty()) {
+            return users;
+        }
 
-        user.addFriendId(friendId);
-        friend.addFriendId(id);
-        userStorage.updateUser(friend);
+        List<Integer> userIds = users.stream().map(User::getId).collect(Collectors.toList());
 
-        return userStorage.updateUser(user);
-    }
+        for (Friend friend : friendDao.findFriends(userIds)) {
+            List<Long> friendsIds;
+            int userId = friend.getUserId();
 
-    public User removeUserFriend(int id, int friendId) {
-        User user = userStorage.getUser(id);
-        User friend = userStorage.getUser(friendId);
+            if (userFriends.containsKey(userId)) {
+                friendsIds = userFriends.get(userId);
+            } else {
+                friendsIds = new ArrayList<>();
+            }
+            friendsIds.add((long) friend.getFriendId());
+            userFriends.put(userId, friendsIds);
+        }
+        for (User user : users) {
+            int userId = user.getId();
 
-        user.removeFriendId(friendId);
-        friend.removeFriendId(id);
-        userStorage.updateUser(friend);
+            if (userFriends.containsKey(userId)) {
+                user.addFriendIds(userFriends.get(userId));
+            }
+        }
 
-        return userStorage.updateUser(user);
-    }
-
-    public List<User> findUserFriends(int id) {
-        return userStorage.getUser(id).getFriendIds().stream()
-                .mapToInt(Long::intValue)
-                .mapToObj(userStorage::getUser)
-                .collect(Collectors.toList());
-    }
-
-    public List<User> findUserMutualFriends(int id, int otherId) {
-        List<User> userFriends = findUserFriends(id);
-        List<User> otherUserFriends = findUserFriends(otherId);
-
-        return userFriends.stream().filter(otherUserFriends::contains).collect(Collectors.toList());
+        return users;
     }
 }

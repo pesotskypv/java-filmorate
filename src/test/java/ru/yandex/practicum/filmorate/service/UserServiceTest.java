@@ -13,9 +13,9 @@ public class UserServiceTest {
 
     @Test
     void validateUserTest_shouldReturnNameUser() {
-        User user = new UserService(new InMemoryUserStorage())
-                .createUser(new User(0, "mail@yandex.ru", "User", "",
-                        LocalDate.of(2000, 12, 28)));
+        User user = new UserService(new InMemoryUserStorage(), null)
+                .createUser(new User(0, "User", "",
+                        LocalDate.of(2000, 12, 28), "mail@yandex.ru"));
 
         assertFalse(user.getName().isEmpty(), "Отсутствует имя.");
         assertEquals("User", user.getName(), "Неверное имя.");
@@ -23,9 +23,9 @@ public class UserServiceTest {
 
     @Test
     void validateUserTest_shouldReturnNameUser2() {
-        User user = new UserService(new InMemoryUserStorage())
-                .createUser(new User(0, "mail@yandex.ru", "User2", null,
-                        LocalDate.of(2000, 12, 28)));
+        User user = new UserService(new InMemoryUserStorage(), null)
+                .createUser(new User(0, "User2", null,
+                        LocalDate.of(2000, 12, 28), "mail@yandex.ru"));
 
         assertFalse(user.getName().isEmpty(), "Отсутствует имя.");
         assertEquals("User2", user.getName(), "Неверное имя.");
@@ -33,9 +33,9 @@ public class UserServiceTest {
 
     @Test
     void validateUserTest_shouldReturnNameUser3() {
-        User user = new UserService(new InMemoryUserStorage())
-                .createUser(new User(0, "mail@yandex.ru", "User", "User3",
-                        LocalDate.of(2000, 12, 28)));
+        User user = new UserService(new InMemoryUserStorage(), null)
+                .createUser(new User(0, "User", "User3",
+                        LocalDate.of(2000, 12, 28), "mail@yandex.ru"));
 
         assertFalse(user.getName().isEmpty(), "Отсутствует имя.");
         assertEquals("User3", user.getName(), "Неверное имя.");

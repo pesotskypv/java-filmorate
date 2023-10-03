@@ -1,9 +1,6 @@
 package ru.yandex.practicum.filmorate.model;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
+import lombok.*;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
@@ -12,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 
 @Data
+@Builder
 @AllArgsConstructor
 public class Film {
 
@@ -30,17 +28,22 @@ public class Film {
     private int duration;
 
     @Getter(AccessLevel.NONE)
+    private final Set<Genre> genres = new HashSet<>();
+
+    private Mpa mpa;
+
+    @Getter(AccessLevel.NONE)
     private final Set<Long> likes = new HashSet<>();
 
-    public List<Long> getLikeUserIds() {
-        return List.copyOf(likes);
+    public List<Genre> getGenres() {
+        return List.copyOf(genres);
     }
 
-    public void addLikeUserId(int id) {
-        likes.add((long) id);
+    public void addGenres(List<Genre> list) {
+        genres.addAll(list);
     }
 
-    public void removeLikeUserId(int id) {
-        likes.remove((long) id);
+    public void addLikeUserId(List<Long> list) {
+        likes.addAll(list);
     }
 }
